@@ -90,8 +90,8 @@ Store::Store(std::string path)
 
 LoadResult Store::Load()
 {
-    KeyValue root{ "user_stats" };
-    KeyValueFileResult fileResult = root.ParseFromFileDetailed(m_path.c_str());
+    KeyValue kv{ "user_stats" };
+    KeyValueFileResult fileResult = kv.ParseFromFileDetailed(m_path.c_str());
     if (fileResult == KeyValueFileResult::NotFound)
     {
         m_integerStats.clear();
@@ -111,7 +111,8 @@ LoadResult Store::Load()
     }
 
     uint32_t version{};
-    const KeyValue *versionValue = root.GetSubkey("version");
+    const KeyValue *root = kv.GetSubkey("user_stats");
+    const KeyValue *versionValue = root->GetSubkey("version");
     if (!versionValue || !ParseNumber(versionValue->String(), version) || version != FileVersion)
     {
         return LoadResult::InvalidFormat;
@@ -120,7 +121,7 @@ LoadResult Store::Load()
     std::unordered_map<std::string, int32_t> integerStats;
     std::unordered_map<std::string, float> floatStats;
     std::unordered_map<std::string, uint32_t> achievements;
-    if (const KeyValue *section = root.GetSubkey("integer_stats"))
+    if (const KeyValue *section = root->GetSubkey("integer_stats"))
     {
         for (const KeyValue &entry : *section)
         {
@@ -136,7 +137,7 @@ LoadResult Store::Load()
         }
     }
 
-    if (const KeyValue *section = root.GetSubkey("float_stats"))
+    if (const KeyValue *section = root->GetSubkey("float_stats"))
     {
         for (const KeyValue &entry : *section)
         {
@@ -153,7 +154,7 @@ LoadResult Store::Load()
         }
     }
 
-    if (const KeyValue *section = root.GetSubkey("achievements"))
+    if (const KeyValue *section = root->GetSubkey("achievements"))
     {
         for (const KeyValue &entry : *section)
         {
@@ -275,7 +276,8 @@ bool Store::Save(std::vector<std::string> &storedAchievements)
         return false;
     }
 
-    KeyValue root{ "user_stats" };
+    KeyValue kv{ "user_stats" };
+    KeyValue &root = kv.AddSubkey("user_stats");
     root.AddNumber("version", FileVersion);
 
     if (!m_integerStats.empty())
@@ -305,7 +307,7 @@ bool Store::Save(std::vector<std::string> &storedAchievements)
         }
     }
 
-    if (!root.WriteToFile(m_path.c_str()))
+    if (!kv.WriteToFile(m_path.c_str()))
     {
         return false;
     }
